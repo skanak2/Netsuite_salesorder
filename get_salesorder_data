@@ -1,0 +1,186 @@
+
+
+
+
+
+<?php 
+
+require 'PHPToolkit/NSconfig.php';
+
+ require 'PHPToolkit/NetSuiteService.php';
+ 
+require_once 'PHPToolkit/NSPHPClient.php';
+
+
+echo "Connecting to server ..........\n";
+$ct=0;
+$pageindex=0;
+$service= new NetSuiteService();
+$search = new TransactionSearchAdvanced();
+$search->savedSearchId ="enter internal id of your saved search"; 
+//Saved Search internal ID, where the internal id's of all sales order records are saved 
+
+
+$cnt=0;
+$request = new SearchRequest();
+$request->searchRecord = $search;
+$searchResponse = $service->search($request);
+
+
+//check if the records are present?
+if (!$searchResponse->searchResult->status->isSuccess) {
+            echo "SEARCH ERROR";
+        } else {
+         echo "SEARCH SUCCESS, records found: " . $searchResponse->searchResult->totalRecords . "\n";
+         $totalRecords=$searchResponse->searchResult->totalRecords;
+         $noofpages=$searchResponse->searchResult->totalPages;
+         $noofpages=round($noofpages);//getting the total number of pages in a saved search
+         //go to next page if 1000 records are over, as normally a page contains 1000 records at max
+         for($p=0;$p<$noofpages;$p++)//going to next page index
+         {
+         	
+         	
+         	
+         	
+         	
+         	
+         	if($ct!=0)
+         	{
+         		
+         		
+         		$searchId = $searchResponse->searchResult->searchId;//getting the searchid
+         		$pageSize=$searchResponse->searchResult->pageSize;//size of a page
+         		$currentPage=$searchResponse->searchResult->pageIndex;//what is the current index of a page
+         		echo "page index issssss".$currentPage;
+         		
+         		$request = new SearchMoreWithIdRequest();
+         		$request->searchId = $searchId;
+         		$request->pageIndex = $currentPage+1;//moving to next page
+         		$moreSearchResponse = $service->searchMoreWithId($request);
+         		$searchResponse=$moreSearchResponse;
+         	
+         	
+         		if (!$searchResponse->searchResult->status->isSuccess) {
+         			echo "SEARCH ERROR";
+         		} else {
+         echo "SEARCH SUCCESS, records found: " . $searchResponse->searchResult->totalRecords ."\n";
+         			$totalrecords=$searchResponse->searchResult->totalRecords;
+         			
+         		}
+         	}//end of moresearch
+         	
+         	
+         	
+         	$ct=$ct+1;
+         	
+    $records = $searchResponse->searchResult->searchRowList->searchRow;
+    foreach ($records as $record)  {
+        
+        
+        $brocs=$record->basic->internalId;//fetches Internal ID from record
+        $storetype="";
+        $freefrieght="";
+        $industry="";
+        $promotion="";
+        //$orderreason="";
+       // var_dump($record->basic);
+        	echo "the internal id is............... ";
+        	for($l=0;$l<4;$l++)
+        	{
+        		if(isset($record->basic->customFieldList->customField[$l])){
+        			
+        	if($record->basic->customFieldList->customField[$l]->scriptId=="custbody_storetype")
+        	$storetype=print_r($record->basic->customFieldList->customField[$l]->searchValue, 1);
+        
+        	if($record->basic->customFieldList->customField[$l]->scriptId=="custbodysales_freefreight")
+        	$freefrieght=$record->basic->customFieldList->customField[$l]->searchValue;
+        	
+        	if($record->basic->customFieldList->customField[$l]->scriptId=="custbodysales_industry")
+        	$industry=print_r($record->basic->customFieldList->customField[$l]->searchValue->name, 1);
+        	if($record->basic->customFieldList->customField[$l]->scriptId=="custbodysales_promotion")
+        	$promotion=print_r($record->basic->customFieldList->customField[$l]->searchValue, 1);
+        	if($record->basic->customFieldList->customField[$l]->scriptId=="custbodysales_freefreightreasoncode")
+        	$freefrieght=print_r($record->basic->customFieldList->customField[$l]->searchValue->name, 1);
+        	
+        		}}
+        	
+        	$intid=$brocs[0]->searchValue->internalId;//saving internal id in a variable
+        	
+        	$s = print_r($intid, 1);
+        	echo ($s);
+        	if($cnt%2==0)
+        	{
+        	//emptying the cache( not mandatory)
+        		ini_set('soap.wsdl_cache_enabled',0);
+        		ini_set('soap.wsdl_cache_ttl',0);
+        		ini_set("default_socket_timeout", 200);
+        	}
+        	
+        	get_allorderfields($s,$service,$storetype);//calling function to get all details in sales order record
+        	//passing internal id and service as parameters
+        	$cnt++;
+        	
+      // for connection change keep_alive=true in NSPHPclient.php else the connection can break anytime in between
+
+        	
+    }}}
+    
+        
+    
+    
+
+    function get_allorderfields($intid,$service,$storetype)
+    {
+    	
+    	$request = new GetRequest();
+    	// A recordRef object that specifies the id of the record to be retrieved.
+    	$request->baseRef = new RecordRef();// get request, get all types request related to what you need actually
+    	$request->baseRef->internalId =$intid;//internal id of record to be fetched
+    	$request->baseRef->type = "salesOrder";//Type of the record which is need to be fetched
+    
+    
+    
+    	
+    
+    
+    	$getResponse = $service->get($request);//gets the object
+    	if ( ! $getResponse->readResponse->status->isSuccess) {
+    		echo "GET ERROR";
+    	} else {
+    		
+    		
+    		
+    		//you will find all the objects here and can save them in any variable, some are shown for example
+    		$datew = print_r($customer->createdDate, 1);
+    		
+    		
+    		
+    		
+    		
+    		
+    		$projectname= print_r($customer->customForm->name, 1);
+    		
+    		$salesteammember= print_r($customer->salesTeamList->salesTeam[0]->employee->name, 1);
+    		
+    
+   
+    
+    
+    	}
+    
+    
+    }
+    
+    
+    
+   
+    
+    
+    
+    
+
+
+?>
+
+
+
